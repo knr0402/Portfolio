@@ -96,21 +96,31 @@ p {
 
 /* Navbar */
 #navbar {
+  position: fixed;
   display: flex;
   justify-content: space-between;
-  background-color: var(--color-pink);
   align-items: center;
-  color: var(--color-white);
-  padding: 16px;
+  background-color: transparent;
+  /* padding: 16px; */
+  color: white;
+  width: 100%;
+  transition: all var(--animation-duration) ease-in-out;
 }
 
 .navbar__menu {
   display: flex;
+  padding-right: 10px;
+}
+
+#navbar.navbar--dark {
+  background-color: var(--color-pink);
 }
 
 .navbar__logo {
   font-size: var(--font-medium);
   font-weight: var(--weight-semi-bold);
+  padding-left: 20px;
+  color: white;
 }
 
 .navbar__menu__item {
@@ -118,6 +128,7 @@ p {
   margin: 0 4px;
   cursor: pointer;
   border-radius: var(--size-border-radius);
+  color: white;
 }
 
 .navbar__menu__item.active {
@@ -130,7 +141,7 @@ p {
 
 .navbar__toggle-btn {
   position: absolute;
-  top: 24px;
+  top: 5px;
   right: 32px;
   font-size: 24px;
   color: var(--color-white);
@@ -140,7 +151,7 @@ p {
 /* Home */
 #home {
   background: url("imgs/home-background.png.png") center/cover no-repeat;
-  padding: 40px;
+  padding-top: 80px;
   text-align: center;
 }
 
@@ -167,7 +178,7 @@ p {
 
 /* Section common */
 .section {
-  padding: 50px;
+  padding: 40px;
   text-align: center;
   margin: auto;
 }
@@ -399,6 +410,7 @@ p {
 /* Testimonial */
 #testimonials {
   background-color: var(--color-light-white);
+  padding: 20px;
 }
 
 .testimonial {
@@ -441,6 +453,7 @@ p {
 /* Contact */
 #contact {
   background-color: var(--color-dark-pink);
+  padding: 2px;
 }
 
 .contact__title,
