@@ -100,8 +100,7 @@ p {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: transparent;
-  /* padding: 16px; */
+  background-color: var(--color-pink);
   color: white;
   width: 100%;
   transition: all var(--animation-duration) ease-in-out;
@@ -111,6 +110,10 @@ p {
 .navbar__menu {
   display: flex;
   padding-right: 10px;
+}
+
+.navbar__menu.open {
+  display: block;
 }
 
 #navbar.navbar--dark {
@@ -400,15 +403,15 @@ p {
 }
 
 .project__description h3 {
-  color: var(--color-light-white);
+  color: var(--color-orange);
 }
 
 .project__description h3:after {
   content: "";
   display: block;
   position: relative;
-  left: 50%;
-  width: 25px;
+  left: 46%;
+  width: 70px;
   height: 2px;
   margin-left: -17px;
   margin-top: 8px;
