@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube Speaking Quiz</title>
+  <meta name="description" content="유튜브 영상 내용으로 영어 문장 만들기·말하기 퀴즈를 연습하는 앱" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="./">🎬 YouTube Speaking Quiz</a>
+    <button id="settingsBtn" class="ghost-btn" type="button" aria-label="설정">⚙️ 설정</button>
+  </header>
+
+  <main class="container">
+    <!-- 설정 (API 키) -->
+    <section id="settingsCard" class="card hidden" aria-labelledby="settingsTitle">
+      <h2 id="settingsTitle">설정</h2>
+      <p class="muted">
+        퀴즈를 만들고 채점하려면 <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Anthropic API 키</a>가 필요해요.
+        키는 서버로 보내지지 않고 <b>이 브라우저에만</b> 저장되며, Anthropic API에 직접 요청할 때만 사용돼요.
+      </p>
+      <label class="field">
+        <span>API 키</span>
+        <input id="apiKeyInput" type="password" placeholder="sk-ant-..." autocomplete="off" spellcheck="false" />
+      </label>
+      <label class="check">
+        <input id="rememberKey" type="checkbox" checked />
+        <span>이 기기에 기억하기 (끄면 탭을 닫을 때 지워져요)</span>
+      </label>
+      <div class="row">
+        <button id="saveKeyBtn" class="primary-btn" type="button">저장</button>
+        <button id="clearKeyBtn" class="ghost-btn" type="button">키 삭제</button>
+      </div>
+      <hr />
+      <label class="field">
+        <span>읽어주기 속도 <output id="rateOut">0.9</output>x</span>
+        <input id="rateInput" type="range" min="0.6" max="1.2" step="0.05" value="0.9" />
+      </label>
+    </section>
+
+    <!-- 1단계: 영상 입력 -->
+    <section id="setupCard" class="card" aria-labelledby="setupTitle">
+      <h2 id="setupTitle">1. 영상 링크를 넣어주세요</h2>
+      <form id="setupForm" novalidate>
+        <label class="field">
+          <span>유튜브 링크</span>
+          <input id="urlInput" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=..." required />
+        </label>
+        <div class="grid-2">
+          <label class="field">
+            <span>내 영어 수준</span>
+            <select id="levelInput">
+              <option value="beginner">초급 – 짧고 쉬운 문장</option>
+              <option value="intermediate" selected>중급 – 일상 대화 수준</option>
+              <option value="advanced">고급 – 자연스럽고 긴 문장</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>문제 수</span>
+            <select id="countInput">
+              <option value="5">5문제</option>
+              <option value="8" selected>8문제</option>
+              <option value="10">10문제</option>
+            </select>
+          </label>
+        </div>
+
+        <details class="transcript-box">
+          <summary>📝 자막(스크립트) 붙여넣기 <span class="badge">선택 · 강력 추천</span></summary>
+          <p class="muted small">
+            자막을 넣으면 영상에 실제로 나온 표현으로 문제를 만들어요. 없으면 영상 정보를 검색해서 주제 중심으로 만들어요.<br />
+            <b>복사 방법:</b> 유튜브에서 영상 설명란의 <i>…더보기</i> → <i>스크립트 표시</i> → 오른쪽 스크립트 창 내용을 드래그해서 복사.
+          </p>
+          <textarea id="transcriptInput" rows="7" placeholder="여기에 자막을 붙여넣으세요 (타임스탬프가 섞여 있어도 괜찮아요)"></textarea>
+        </details>
+
+        <p id="setupError" class="error hidden" role="alert"></p>
+        <button id="generateBtn" class="primary-btn big" type="submit">퀴즈 만들기 ✨</button>
+      </form>
+    </section>
+
+    <!-- 로딩 -->
+    <section id="loadingCard" class="card hidden" aria-live="polite">
+      <div class="spinner" aria-hidden="true"></div>
+      <p id="loadingText" class="center">영상 내용을 살펴보는 중…</p>
+      <p class="center muted small">보통 20초~1분 정도 걸려요.</p>
+    </section>
+
+    <!-- 영상 + 요약 -->
+    <section id="videoCard" class="card hidden" aria-labelledby="videoTitle">
+      <div class="video-wrap">
+        <iframe id="player" title="YouTube video" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+      <h2 id="videoTitle" class="video-title"></h2>
+      <p id="videoAuthor" class="muted small"></p>
+      <details id="summaryBox" class="summary-box">
+        <summary>📌 영상 요약 & 핵심 표현 보기</summary>
+        <div class="summary-body">
+          <p id="summaryKo"></p>
+          <p id="summaryEn" class="en"></p>
+          <h3>핵심 표현</h3>
+          <ul id="expressionList" class="expr-list"></ul>
+        </div>
+      </details>
+    </section>
+
+    <!-- 퀴즈 -->
+    <section id="quizCard" class="card hidden" aria-labelledby="qPrompt">
+      <div class="quiz-head">
+        <span id="qType" class="type-badge"></span>
+        <span id="qProgress" class="muted small"></span>
+      </div>
+      <div class="progress"><div id="progressBar" class="progress-bar"></div></div>
+
+      <p id="qInstruction" class="instruction"></p>
+      <div class="prompt-row">
+        <p id="qPrompt" class="prompt"></p>
+        <button id="speakPromptBtn" class="icon-btn" type="button" title="문제 듣기" aria-label="문제 듣기">🔊</button>
+      </div>
+      <p id="qPromptKo" class="muted small"></p>
+      <div id="qKeywords" class="keywords"></div>
+
+      <details id="hintBox" class="hint-box">
+        <summary>💡 힌트</summary>
+        <p id="qHint"></p>
+      </details>
+
+      <div class="answer-box">
+        <textarea id="answerInput" rows="3" placeholder="영어로 말하거나 입력하세요…" spellcheck="false"></textarea>
+        <p id="interim" class="interim"></p>
+        <div class="row">
+          <button id="micBtn" class="mic-btn" type="button">🎤 말하기</button>
+          <button id="submitBtn" class="primary-btn" type="button">채점하기</button>
+          <button id="skipBtn" class="ghost-btn" type="button">모범답안 보고 넘기기</button>
+        </div>
+        <p id="micNote" class="muted small hidden">이 브라우저는 음성 인식을 지원하지 않아요. Chrome·Edge·Safari에서 열면 말하기로 답할 수 있어요. 지금은 입력으로 연습해요.</p>
+      </div>
+
+      <p id="quizError" class="error hidden" role="alert"></p>
+
+      <div id="feedback" class="feedback hidden" aria-live="polite">
+        <div class="score-row">
+          <div id="scoreCircle" class="score-circle"><span id="scoreNum">0</span></div>
+          <p id="verdict" class="verdict"></p>
+        </div>
+        <div class="fb-block">
+          <h4>✏️ 고친 문장</h4>
+          <div class="say-row"><p id="correctedText" class="en"></p><button class="icon-btn" data-say="correctedText" type="button" aria-label="듣기">🔊</button></div>
+        </div>
+        <div class="fb-block">
+          <h4>🗣️ 더 자연스러운 표현</h4>
+          <div class="say-row"><p id="naturalText" class="en"></p><button class="icon-btn" data-say="naturalText" type="button" aria-label="듣기">🔊</button></div>
+        </div>
+        <ul id="pointList" class="point-list"></ul>
+        <p id="feedbackKo" class="feedback-ko"></p>
+        <div class="row">
+          <button id="retryBtn" class="ghost-btn" type="button">🔁 다시 말해보기</button>
+          <button id="nextBtn" class="primary-btn" type="button">다음 문제 →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 결과 -->
+    <section id="resultCard" class="card hidden" aria-labelledby="resultTitle">
+      <h2 id="resultTitle">🎉 수고했어요!</h2>
+      <p id="resultSummary" class="result-summary"></p>
+      <ol id="resultList" class="result-list"></ol>
+      <div class="row">
+        <button id="reviewBtn" class="primary-btn" type="button">아쉬운 문제 다시 풀기</button>
+        <button id="moreBtn" class="ghost-btn" type="button">같은 영상으로 새 문제</button>
+        <button id="newVideoBtn" class="ghost-btn" type="button">다른 영상</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer muted small">
+    Powered by Claude · 음성 인식/읽어주기는 브라우저 기능을 사용해요.
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
